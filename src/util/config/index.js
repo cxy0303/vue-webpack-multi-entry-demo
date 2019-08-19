@@ -2,5 +2,5 @@
 
 
 export default {
-  remoteurl: ''
+  remoteurl: 'http://119.3.4.230:8599'
 }
