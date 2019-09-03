@@ -59,11 +59,7 @@ var app = {
     }
   },
   fetch() {
-    this.app.$api.getadlist({pageSize:20}).then((result) => {
-      if (result.R) {
-        this.list = result.data;
-      }
-    })
+
   }
 }
 

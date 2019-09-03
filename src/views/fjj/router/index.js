@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import HelloWorld from '@/components/HelloWorld'
+import svg_vue_tree_panel from '@/components/svg-vue-tree-panel'
 
 Vue.use(Router)
 
@@ -10,7 +10,6 @@ export default new Router({
   fallback: false,
   routes: [{
     path: '/',
-    name: 'HelloWorld',
-    component: HelloWorld
+    component: svg_vue_tree_panel
   }]
 })

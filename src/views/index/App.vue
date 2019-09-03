@@ -1,10 +1,5 @@
 <template>
 <div id="app">
-  <div class="header">
-    {{$config.remoteurl}}
-  </div>
-  <van-button type="default">默认按钮</van-button>
-  <van-button type="primary">主要按钮</van-button>
   <router-view />
 </div>
 </template>
@@ -40,6 +35,16 @@ export default {
 </script>
 
 <style lang="less">
+body,
+html {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+* {
+    box-sizing: border-box;
+}
 #app {
     font-family: 'Avenir', Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
