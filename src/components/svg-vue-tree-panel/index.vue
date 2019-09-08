@@ -1,12 +1,8 @@
 <template>
 <div class="svg-vue-tree">
   <svg xmlns="http://www.w3.org/2000/svg" class="svg_container" @mousedown="mousedown_handle($event)">
-    <symbol :id='"item_box_"+item.id' v-for='(item,index) in items' viewBox='0 0 180 50' class="item-box">
-      <rect x='0' y='0' width='180' height='50' fill='#EEEEEE' stroke='grey' stroke-width='2'></rect>
-      <text x='90' y='25' width='180' height='50' fill='red'>{{item.text}}</text>
-    </symbol>
     <g ref='svg_g_root' class="svg_g_root">
-      <use v-for='(item,index) in items' :xlink:href='"#item_box_"+item.id' x='0' y='0' width='180' height='50' @mousedown.stop="mousedown_handle($event,item)"></use>
+      <item-tag :key='item.id' :item='item' v-for='(item,index) in items' @mousedown.native.stop="mousedown_handle($event,item)"></item-tag>
       <path :d='line' stroke='black' stroke-width='1'></path>
     </g>
   </svg>
@@ -14,12 +10,13 @@
 </div>
 </template>
 <script>
+import itemtag from './itembox/itemtag'
 export default {
   data() {
     return {
-      items: [{
+      items: [{ //显示数据
         id: 0,
-        text: '任务测试一',
+        text: '任务测试一sdfsdfdsfsdfsdfsdfsdf',
         tx: 0,
         ty: 0
       }, {
@@ -32,11 +29,20 @@ export default {
         tx: 0,
         ty: 0
       },
-      moveitem: {
+      moveitem: { //拖拽实时数据
         el: null,
         data: null
-      }
+      },
+      linepath: {
+				// 'key1-key2':{
+				// 	from:fromitem,
+				// 	to:toitem
+				// }
+			} //连线关系数据
     }
+  },
+  components: {
+    "item-tag": itemtag
   },
   computed: {
     line() {
@@ -48,10 +54,15 @@ export default {
       return `M${x1},${y1} L${x2},${y2}`;
     }
   },
+  lines() {
+    var all_paths = {};
+    return all_paths;
+  },
   methods: {
     mousedown_handle(e, item) {
+      debugger
       if (item) {
-        this.moveitem.el = e.target;
+        this.moveitem.el = e.currentTarget;
         this.moveitem.data = item;
       } else {
         this.moveitem.el = this.$refs["svg_g_root"];
@@ -81,6 +92,7 @@ export default {
     }
   },
   mounted() {
+    debugger
     this.init();
   }
 }
@@ -94,13 +106,6 @@ export default {
         width: 100%;
         height: 100%;
         background: none;
-        .item-box {
-            text {
-                text-anchor: middle;
-                font-size: 20px;
-                dominant-baseline: middle;
-            }
-        }
 
     }
 }
