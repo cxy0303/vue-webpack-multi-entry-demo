@@ -1,8 +1,5 @@
 <template>
 <div class="svg-vue-tree">
-  <button @click='addline'>添加连线{{test}}</button>
-  <div class="svg-vue-grid">
-  </div>
   <svg xmlns="http://www.w3.org/2000/svg" class="svg_container" @mousedown="mousedown_handle($event)">
     <g ref='svg_g_root' class="svg_g_root">
       <g class="svg_g_line">
@@ -21,7 +18,6 @@ import itemtag from './itembox/itemtag'
 export default {
   data() {
     return {
-      test: 0,
       items: [{ //显示数据
         id: 0,
         text: '任务测试一sdfsdfdsfsdfsdfsdfsdf',
@@ -60,6 +56,9 @@ export default {
       },
       moveitem: { //拖拽实时数据
         el: null,
+        offsetx: 0,
+        offsety: 0,
+        unit: 10,
         data: null
       }
     }
@@ -68,11 +67,6 @@ export default {
     "item-tag": itemtag
   },
   computed: {},
-  lines() {
-    var all_paths = {};
-
-    return all_paths;
-  },
   methods: {
     addline() {
       this.lines.push({
@@ -160,6 +154,8 @@ export default {
       return `M${x1},${y1} L${x2},${y2}`;
     },
     mousedown_handle(e, item) {
+      this.moveitem.offsetx = 0;
+      this.moveitem.offsety = 0;
       if (item) {
         this.moveitem.el = e.currentTarget;
         this.moveitem.data = item;
@@ -172,10 +168,26 @@ export default {
       if (this.moveitem.el) {
         var target = this.moveitem.el;
         var data = this.moveitem.data;
+
+        this.moveitem.offsetx += e.movementX;
+        this.moveitem.offsety += e.movementY;
+
         let ox = data.tx || 0;
         let oy = data.ty || 0;
-        let x = e.movementX + ox;
-        let y = e.movementY + oy;
+
+        let x = ox;
+        if (Math.abs(this.moveitem.offsetx) >= this.moveitem.unit) {
+          x += this.moveitem.offsetx > 0 ? this.moveitem.unit : 0 - this.moveitem.unit;
+          this.moveitem.offsetx = 0;
+        }
+
+        let y = oy;
+        if (Math.abs(this.moveitem.offsety) >= this.moveitem.unit) {
+					console.log('========================');
+          y += this.moveitem.offsety > 0 ? this.moveitem.unit : 0 - this.moveitem.unit;
+          this.moveitem.offsety = 0;
+        }
+
         target.style.transform = `translate(${x}px,${y}px)`;
         data.tx = x;
         data.ty = y;
@@ -188,6 +200,7 @@ export default {
         this.moveitem.el = null;
         this.moveitem.data = null;
       })
+      this.addline();
     }
   },
   mounted() {
@@ -201,41 +214,16 @@ export default {
     font-family: '微软雅黑';
     width: 100%;
     height: 100%;
-    background-color: white;
-    overflow: hidden;
+    overflow: 2bg;
     position: relative;
-    .svg-vue-grid {
-        position: absolute;
-        left: -500px;
-        top: -500px;
-        width: 3000px;
-        height: 3000px;
-        background: -moz-linear-gradient(top, transparent 49px, blue 50px), -moz-linear-gradient(left, transparent 49px, @gridborder1 50px);
-        background: -o-linear-gradient(top, transparent 49px, blue 50px), -o-linear-gradient(left, transparent 49px, @gridborder1@gridborder1 50px);
-        background: -ms-linear-gradient(top, transparent 49px, blue 50px), -ms-linear-gradient(left, transparent 49px, @gridborder1 50px);
-        background: linear-gradient(top, transparent 49px, blue 50px), linear-gradient(left, transparent 49px, @gridborder1 50px);
-        background: -webkit-linear-gradient(top, transparent 49px, @bordercolor 50px), -webkit-linear-gradient(left, transparent 49px, @gridborder1 50px);
-        -webkit-background-size: 50px 50px;
-        -moz-background-size: 50px 50px;
-        background-size: 50px 50px;
-        &::before {
-            content: ' ';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: -webkit-linear-gradient(top, transparent 9px, @bordercolor 10px), -webkit-linear-gradient(left, transparent 9px, @gridborder1 10px);
-            background-size: 10px 10px;
-        }
-    }
+    background: @bg;
     .svg_container {
         width: 100%;
         height: 100%;
         background: none;
         cursor: pointer;
         position: relative;
-        z-index: 1;
+        z-index: 11;
         .svg_g_component {
             position: relative;
             z-index: 2;

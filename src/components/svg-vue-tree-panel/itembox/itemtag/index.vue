@@ -34,8 +34,8 @@ export default {
         }
     }
     rect {
-        rx: 3px;
-        ry: 3px;
+        rx: 2px;
+        ry: 2px;
         stroke: @bordercolor;
         fill: white;
     }
