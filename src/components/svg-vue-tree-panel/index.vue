@@ -1,9 +1,19 @@
 <template>
 <div class="svg-vue-tree">
   <svg xmlns="http://www.w3.org/2000/svg" class="svg_container" @mousedown="mousedown_handle($event)">
+    <defs>
+      <marker id="m_end" class="marker_end" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10" markerHeight="10" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 L0 0 z" />
+      </marker>
+      <marker id="m_start" class="marker_start" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="10" markerHeight="10" orient="auto">
+        <circle cx='5' cy='5' r='5'></circle>
+      </marker>
+    </defs>
     <g ref='svg_g_root' class="svg_g_root">
       <g class="svg_g_line">
-        <path v-for='(item,index) in lines' :d='get_line_path(item.from,item.to)'></path>
+        <template v-for='(item,index) in lines'>
+          <path :d='get_line_path(item.from,item.to)' marker-start="url(#m_start)" marker-end="url(#m_end)"></path>
+        </template>
       </g>
       <g class="svg_g_component">
         <item-tag :ref='"com_"+item.id' :key='item.id' :item='item' v-for='(item,index) in items' @mousedown.native.stop="mousedown_handle($event,item)"></item-tag>
@@ -47,7 +57,7 @@ export default {
         height: 50
       }],
       lines: [],
-      linetype: 1, //0:直线，1：折线，2：曲线
+      linetype: 2, //0:直线，1：折线，2：曲线
       svg_g_root: {
         tx: 0,
         ty: 0,
@@ -184,6 +194,17 @@ export default {
           let y3 = y2;
           return `M${startx},${starty} L${x2},${y2} L${x3},${y3} L${endx},${endy}`;
         }
+      } else if (linetype == 2) {
+        let x = startx + (endx - startx) / 2;
+        let y = starty + (endy - starty) / 2;
+        if (director == "x") {
+          x = startx;
+          y = endy;
+        } else {
+          x = endx;
+          y = starty;
+        }
+        return `M${startx},${starty} C${startx},${starty} ${x},${y} ${endx},${endy}`;
       }
     },
     mousedown_handle(e, item) {
@@ -252,7 +273,7 @@ export default {
     font-family: '微软雅黑';
     width: 100%;
     height: 100%;
-    overflow: 2bg;
+    overflow: hidden;
     position: relative;
     background: @bg;
     .svg_container {
@@ -274,6 +295,10 @@ export default {
                 stroke-width: 1;
                 fill: none;
             }
+        }
+        .marker_end,
+        .marker_start {
+            fill: @linecolor;
         }
     }
 }
