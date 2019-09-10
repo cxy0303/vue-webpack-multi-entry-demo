@@ -47,7 +47,7 @@ export default {
         height: 50
       }],
       lines: [],
-      linetype: 0, //0:直线，1：折线，2：曲线
+      linetype: 1, //0:直线，1：折线，2：曲线
       svg_g_root: {
         tx: 0,
         ty: 0,
@@ -172,9 +172,17 @@ export default {
         return `M${startx},${starty} L${endx},${endy}`;
       } else if (linetype == 1) {
         if (director == "x") {
-          return `M${x1},${y1} L${x2},${y2} L${x3},${y3} L${x4},${y4}`;
+          let x2 = (endx - startx) / 2;
+          let y2 = starty;
+          let x3 = (endx - startx) / 2;
+          let y3 = endy;
+          return `M${startx},${starty} L${x2},${y2} L${x3},${y3} L${endx},${endy}`;
         } else {
-					return `M${x1},${y1} L${x2},${y2} L${x3},${y3} L${x4},${y4}`;
+          let x2 = (endy - starty) / 2;
+          let y2 = startx;
+          let x3 = (endy - starty) / 2;
+          let y3 = endx;
+          return `M${startx},${starty} L${x2},${y2} L${x3},${y3} L${endx},${endy}`;
         }
       }
     },
@@ -264,6 +272,7 @@ export default {
             path {
                 stroke: @linecolor;
                 stroke-width: 1;
+                fill: none;
             }
         }
     }
