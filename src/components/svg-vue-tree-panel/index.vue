@@ -172,16 +172,16 @@ export default {
         return `M${startx},${starty} L${endx},${endy}`;
       } else if (linetype == 1) {
         if (director == "x") {
-          let x2 = (endx - startx) / 2;
+          let x2 = startx + (endx - startx) / 2;
           let y2 = starty;
-          let x3 = (endx - startx) / 2;
+          let x3 = x2;
           let y3 = endy;
           return `M${startx},${starty} L${x2},${y2} L${x3},${y3} L${endx},${endy}`;
         } else {
-          let x2 = (endy - starty) / 2;
-          let y2 = startx;
-          let x3 = (endy - starty) / 2;
-          let y3 = endx;
+          let x2 = startx;
+          let y2 = starty + (endy - starty) / 2;
+          let x3 = endx;
+          let y3 = y2;
           return `M${startx},${starty} L${x2},${y2} L${x3},${y3} L${endx},${endy}`;
         }
       }
