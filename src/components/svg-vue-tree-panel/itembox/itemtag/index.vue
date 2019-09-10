@@ -1,7 +1,7 @@
 <template>
 <g class="item-tag">
   <rect x='0' y='0' :width='item.width' :height='item.height'></rect>
-  <text x='90' textLength='160px' y='25' :width='item.width' :height='item.height'>{{item.text}}</text>
+  <text x='90' y='25' textLength='160' :width='item.width' :height='item.height'>{{item.text}}</text>
 </g>
 </template>
 <script>
@@ -25,6 +25,7 @@ export default {
 @import '../../index.less';
 .item-tag {
     cursor: move;
+    overflow: hidden;
     &:hover {
         rect {
             fill: grey;
@@ -43,7 +44,6 @@ export default {
         text-anchor: middle;
         dominant-baseline: middle;
         overflow: hidden;
-        textLength: 20px;
         font-size: 13px;
     }
 }

@@ -11,7 +11,6 @@
     </g>
   </svg>
 </div>
-</div>
 </template>
 <script>
 import itemtag from './itembox/itemtag'
@@ -48,6 +47,7 @@ export default {
         height: 50
       }],
       lines: [],
+      linetype: 0, //0:直线，1：折线，2：曲线
       svg_g_root: {
         tx: 0,
         ty: 0,
@@ -56,8 +56,12 @@ export default {
       },
       moveitem: { //拖拽实时数据
         el: null,
-        offsetx: 0,
-        offsety: 0,
+        //鼠标按下时坐标
+        startx: 0,
+        endx: 0,
+        //鼠标按下时元素坐标
+        elx: 0,
+        ely: 0,
         unit: 10,
         data: null
       }
@@ -125,43 +129,68 @@ export default {
 
       var angel = this.get_x_line_angel(x1, y1, x2, y2);
 
+      let linedirector = 'x';
       if ((angel >= 315 && angel <= 360) || (angel >= 0 && angel <= 45)) {
         x1 = from.tx + from.width / 2;
         y1 = from.ty;
 
         x2 = to.tx + to.width / 2;
         y2 = to.ty + to.height;
+
+        linedirector = 'y';
       } else if (angel >= 45 && angel <= 135) {
         x1 = from.tx + from.width;
         y1 = from.ty + from.height / 2;
 
         x2 = to.tx;
         y2 = to.ty + to.height / 2;
+
+        linedirector = 'x';
       } else if (angel >= 135 && angel <= 225) {
         x1 = from.tx + from.width / 2;
         y1 = from.ty + from.height;
 
         x2 = to.tx + to.width / 2;
         y2 = to.ty;
+
+        linedirector = 'y';
       } else {
         x1 = from.tx;
         y1 = from.ty + from.height / 2;
 
         x2 = to.tx + to.width;
         y2 = to.ty + to.height / 2;
+
+        linedirector = 'x';
       }
 
-      return `M${x1},${y1} L${x2},${y2}`;
+      return this.lineexchange(this.linetype, linedirector, x1, y1, x2, y2);
+    },
+    //连线风格变换
+    lineexchange(linetype, director, startx, starty, endx, endy) {
+      if (linetype == 0) {
+        return `M${startx},${starty} L${endx},${endy}`;
+      } else if (linetype == 1) {
+        if (director == "x") {
+          return `M${x1},${y1} L${x2},${y2} L${x3},${y3} L${x4},${y4}`;
+        } else {
+					return `M${x1},${y1} L${x2},${y2} L${x3},${y3} L${x4},${y4}`;
+        }
+      }
     },
     mousedown_handle(e, item) {
-      this.moveitem.offsetx = 0;
-      this.moveitem.offsety = 0;
+      this.moveitem.startx = e.screenX;
+      this.moveitem.starty = e.screenY;
       if (item) {
         this.moveitem.el = e.currentTarget;
         this.moveitem.data = item;
+        this.moveitem.elx = item.tx;
+        this.moveitem.ely = item.ty;
       } else {
         this.moveitem.el = this.$refs["svg_g_root"];
         this.moveitem.data = this.svg_g_root;
+        this.moveitem.elx = this.svg_g_root.tx;
+        this.moveitem.ely = this.svg_g_root.ty;
       }
     },
     mousemove_handler(e) {
@@ -169,30 +198,31 @@ export default {
         var target = this.moveitem.el;
         var data = this.moveitem.data;
 
-        this.moveitem.offsetx += e.movementX;
-        this.moveitem.offsety += e.movementY;
+        let endx = e.screenX;
+        let endy = e.screenY;
 
-        let ox = data.tx || 0;
-        let oy = data.ty || 0;
+        let offsetx = endx - this.moveitem.startx;
+        let osffsety = endy - this.moveitem.starty;
 
-        let x = ox;
-        if (Math.abs(this.moveitem.offsetx) >= this.moveitem.unit) {
-          x += this.moveitem.offsetx > 0 ? this.moveitem.unit : 0 - this.moveitem.unit;
-          this.moveitem.offsetx = 0;
-        }
+        offsetx = parseInt(offsetx / this.moveitem.unit) * this.moveitem.unit;
+        osffsety = parseInt(osffsety / this.moveitem.unit) * this.moveitem.unit;
 
-        let y = oy;
-        if (Math.abs(this.moveitem.offsety) >= this.moveitem.unit) {
-					console.log('========================');
-          y += this.moveitem.offsety > 0 ? this.moveitem.unit : 0 - this.moveitem.unit;
-          this.moveitem.offsety = 0;
-        }
+        let ox = this.moveitem.elx || 0;
+        let oy = this.moveitem.ely || 0;
+
+        let x = ox + offsetx;
+        let y = oy + osffsety;
 
         target.style.transform = `translate(${x}px,${y}px)`;
+
         data.tx = x;
         data.ty = y;
       }
-      window.getSelection ? window.getSelection().removeAllRanges() : document.selection.empty();
+      if (window.getSelection) {
+        window.getSelection().removeAllRanges()
+      } else {
+        document.selection.empty()
+      }
     },
     init() {
       document.addEventListener("mousemove", this.mousemove_handler)
