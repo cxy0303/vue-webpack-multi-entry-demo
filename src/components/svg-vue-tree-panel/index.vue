@@ -9,14 +9,14 @@
         <circle cx='5' cy='5' r='5'></circle>
       </marker>
     </defs>
-    <g ref='svg_g_root' class="svg_g_root">
+    <g ref='svg_g_root' class="svg_g_root"  :transform='`translate(${svg_g_root.tx},${svg_g_root.ty})`'>
       <g class="svg_g_line">
         <template v-for='(item,index) in lines'>
           <path :d='get_line_path(item.from,item.to)' marker-start="url(#m_start)" marker-end="url(#m_end)"></path>
         </template>
       </g>
       <g class="svg_g_component">
-        <item-tag :ref='"com_"+item.id' :key='item.id' :item='item' v-for='(item,index) in items' @mousedown.native.stop="mousedown_handle($event,item)"></item-tag>
+        <item-tag :transform='`translate(${item.tx},${item.ty})`' :ref='"com_"+item.id' :key='item.id' :item='item' v-for='(item,index) in items' @mousedown.native.stop="mousedown_handle($event,item)"></item-tag>
       </g>
     </g>
   </svg>
@@ -242,8 +242,6 @@ export default {
         let x = ox + offsetx;
         let y = oy + osffsety;
 
-        target.style.transform = `translate(${x}px,${y}px)`;
-
         data.tx = x;
         data.ty = y;
       }
@@ -292,7 +290,7 @@ export default {
             z-index: 1;
             path {
                 stroke: @linecolor;
-                stroke-width: 1;
+                stroke-width: 0.8;
                 fill: none;
             }
         }

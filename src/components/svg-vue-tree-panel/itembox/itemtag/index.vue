@@ -1,7 +1,7 @@
 <template>
 <g class="item-tag">
   <rect x='0' y='0' :width='item.width' :height='item.height'></rect>
-  <text x='90' y='25'  :width='item.width' :height='item.height'>{{item.text}}</text>
+  <text x='90' y='25' :width='item.width' :height='item.height'>{{item.text}}</text>
 </g>
 </template>
 <script>
@@ -39,6 +39,7 @@ export default {
         ry: 2px;
         stroke: @bordercolor;
         fill: white;
+        stroke-width: 0.6;
     }
     text {
         text-anchor: middle;
