@@ -9,14 +9,14 @@
         <circle cx='5' cy='5' r='5'></circle>
       </marker>
     </defs>
-    <g ref='svg_g_root' class="svg_g_root">
+    <g ref='svg_g_root' class="svg_g_root" :transform='`translate(${svg_g_root.tx},${svg_g_root.ty})`'>
       <g class="svg_g_line">
         <template v-for='(item,index) in lines'>
           <path :d='get_line_path(item.from,item.to)' marker-start="url(#m_start)" marker-end="url(#m_end)"></path>
         </template>
       </g>
       <g class="svg_g_component">
-        <item-tag :ref='"com_"+item.id' :key='item.id' :item='item' v-for='(item,index) in items' @mousedown.native.stop="mousedown_handle($event,item)"></item-tag>
+        <item-tag  :transform='`translate(${item.tx},${item.ty})`' :ref='"com_"+item.id' :key='item.id' :item='item' v-for='(item,index) in items' @mousedown.native.stop="mousedown_handle($event,item)"></item-tag>
       </g>
     </g>
   </svg>
@@ -30,29 +30,29 @@ export default {
       items: [{ //显示数据
         id: 0,
         text: '任务测试一sdfsdfdsfsdfsdfsdfsdf',
-        tx: 0,
-        ty: 0,
+        tx: 100,
+        ty: 100,
         width: 180,
         height: 50
       }, {
         id: 1,
         text: '任务测试二',
-        tx: 0,
-        ty: 0,
+        tx: 150,
+        ty: 150,
         width: 180,
         height: 50
       }, { //显示数据
         id: 2,
         text: '任务测试三',
-        tx: 0,
-        ty: 0,
+        tx: 200,
+        ty: 200,
         width: 180,
         height: 50
       }, {
         id: 3,
         text: '任务测试四',
-        tx: 0,
-        ty: 0,
+        tx: 250,
+        ty: 250,
         width: 180,
         height: 50
       }],
@@ -241,9 +241,7 @@ export default {
 
         let x = ox + offsetx;
         let y = oy + osffsety;
-
-        target.style.transform = `translate(${x}px,${y}px)`;
-
+        // target.transform = `translate(${x}px,${y}px)`;
         data.tx = x;
         data.ty = y;
       }
