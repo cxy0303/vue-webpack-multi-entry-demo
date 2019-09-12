@@ -1,7 +1,7 @@
 <template>
-<g class="item-tag">
-  <rect x='0' y='0' :width='item.width' :height='item.height'></rect>
-  <text x='90' y='25' :width='item.width' :height='item.height'>{{item.text}}</text>
+<g class="item-tag" :class="{selected:selected}">
+  <rect class="item-tag-rect" x='0' y='0' :width='item.width' :height='item.height'></rect>
+  <text class="item-tag-text" x='90' y='25' :width='item.width' :height='item.height'>{{item.text}}</text>
 </g>
 </template>
 <script>
@@ -14,6 +14,10 @@ export default {
           text: "测试"
         }
       }
+    },
+    selected: {
+      type: Boolean,
+      default: false
     }
   },
   model: {
@@ -26,13 +30,16 @@ export default {
 .item-tag {
     cursor: move;
     overflow: hidden;
-    &:hover {
-        rect {
+    &.selected {
+        .item-tag-rect {
             fill: grey;
         }
-        text {
+        .item-tag-text {
             fill: white;
         }
+    }
+    &:hover {
+        .selected;
     }
     rect {
         rx: 2px;

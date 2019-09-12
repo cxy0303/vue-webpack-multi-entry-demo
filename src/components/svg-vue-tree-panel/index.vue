@@ -1,6 +1,16 @@
 <template>
-<div class="svg-vue-tree">
-  <svg xmlns="http://www.w3.org/2000/svg" class="svg_container" @mousedown="mousedown_handle($event)">
+<div ref='svg_root' class="svg-vue-tree">
+  <div class="svg-vue-toolbar">
+    <div class="svg-vue-toolbar-container">
+      <div class="svg-vue-toolbar-container-panel">
+        <line-style v-model='linetype'></line-style>
+      </div>
+      <template v-if='line_temp'>
+        {{get_line_path(line_temp.from,line_temp.to)}}
+      </template>
+    </div>
+  </div>
+  <svg v-if='items.length>0' xmlns="http://www.w3.org/2000/svg" class="svg_container" @mousedown="mousedown_handle($event)">
     <defs>
       <marker id="m_end" class="marker_end" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10" markerHeight="10" orient="auto">
         <path d="M 0 0 L 10 5 L 0 10 L0 0 z" />
@@ -9,55 +19,36 @@
         <circle cx='5' cy='5' r='5'></circle>
       </marker>
     </defs>
-    <g ref='svg_g_root' class="svg_g_root"  :transform='`translate(${svg_g_root.tx},${svg_g_root.ty})`'>
+    <g ref='svg_g_root' class="svg_g_root" :transform='`translate(${svg_g_root.tx},${svg_g_root.ty})`'>
       <g class="svg_g_line">
         <template v-for='(item,index) in lines'>
           <path :d='get_line_path(item.from,item.to)' marker-start="url(#m_start)" marker-end="url(#m_end)"></path>
         </template>
+        <path class="line_temp" :d='get_line_path(line_temp.from,line_temp.to)' v-if='line_temp' marker-start="url(#m_start)" marker-end="url(#m_end)"></path>
       </g>
       <g class="svg_g_component">
-        <item-tag :transform='`translate(${item.tx},${item.ty})`' :ref='"com_"+item.id' :key='item.id' :item='item' v-for='(item,index) in items' @mousedown.native.stop="mousedown_handle($event,item)"></item-tag>
+        <item-box :key='item.id' :item='item' v-for='(item,index) in items' @mousedown.native.stop="mousedown_handle($event,item)" @adddragstart='add_dargstart_handler'></item-box>
+				<item-box :item='line_temp.to' v-if='line_temp'></item-box>
       </g>
     </g>
   </svg>
+  <div class="svg-vue-tree-empty">
+    <a class="btn-add" @click='addfirst'>+</a>
+  </div>
 </div>
 </template>
 <script>
-import itemtag from './itembox/itemtag'
+import itembox from './itembox'
+import linestyle from './common/linestyle'
 export default {
   data() {
     return {
-      items: [{ //显示数据
-        id: 0,
-        text: '任务测试一sdfsdfdsfsdfsdfsdfsdf',
-        tx: 0,
-        ty: 0,
-        width: 180,
-        height: 50
-      }, {
-        id: 1,
-        text: '任务测试二',
-        tx: 0,
-        ty: 0,
-        width: 180,
-        height: 50
-      }, { //显示数据
-        id: 2,
-        text: '任务测试三',
-        tx: 0,
-        ty: 0,
-        width: 180,
-        height: 50
-      }, {
-        id: 3,
-        text: '任务测试四',
-        tx: 0,
-        ty: 0,
-        width: 180,
-        height: 50
-      }],
+      mode: 0, //0:浏览模式;1:编辑模式;2:编辑-新增模式
+      items: [],
       lines: [],
-      linetype: 2, //0:直线，1：折线，2：曲线
+      line_temp: null,
+      linetype: 1, //0:直线，1：折线，2：曲线
+      dragitem: null,
       svg_g_root: {
         tx: 0,
         ty: 0,
@@ -78,23 +69,41 @@ export default {
     }
   },
   components: {
-    "item-tag": itemtag
+    "item-box": itembox,
+    "line-style": linestyle
   },
-  computed: {},
+  computed: {
+
+  },
   methods: {
-    addline() {
-      this.lines.push({
-        from: this.items[0],
-        to: this.items[1]
-      })
-      this.lines.push({
-        from: this.items[2],
-        to: this.items[3]
-      })
-      this.lines.push({
-        from: this.items[0],
-        to: this.items[2]
-      })
+    //格式化坐标，这里拖动时每次移动10px，为了保证拖动后元素能对齐，元素的坐标只能是10像素的倍数，移动单位可修改；
+    format_point(pointvalue) {
+      return parseInt(pointvalue / this.moveitem.unit) * this.moveitem.unit;
+    },
+    addnew(item) {
+      this.items.push(item);
+    },
+    addfirst() {
+      let item = {
+        id: parseInt(Math.random() * 1000000),
+        width: 160,
+        height: 45,
+        tx: 0,
+        ty: 0,
+        text: "新元素"
+      }
+      let root_el = this.$refs["svg_root"];
+      item.tx = this.format_point(parseFloat(root_el.offsetWidth) / 2 - item.width / 2);
+      item.ty = this.format_point(parseFloat(root_el.offsetHeight) / 2 - item.height / 2);
+      this.items.push(item);
+    },
+    addline(from, to) {
+      if (from && to) {
+        this.lines.push({
+          from: from,
+          to: to
+        })
+      }
     },
     get_x_line_angel(px, py, mx, my) {
       var x = Math.abs(px - mx);
@@ -138,7 +147,6 @@ export default {
       let y2 = to.ty + to.height / 2;
 
       var angel = this.get_x_line_angel(x1, y1, x2, y2);
-
       let linedirector = 'x';
       if ((angel >= 315 && angel <= 360) || (angel >= 0 && angel <= 45)) {
         x1 = from.tx + from.width / 2;
@@ -222,11 +230,11 @@ export default {
         this.moveitem.ely = this.svg_g_root.ty;
       }
     },
+    //跟随鼠标移动，每次鼠标点击记录点击位置，元素位置，每次移动通过计算鼠标相对上次点击位置的距离，得出元素移动距离，减少误差；
+    //而不是通过移动多少鼠标就移动多少，这样会由于每次计算精确度的误差逐渐递增
     mousemove_handler(e) {
       if (this.moveitem.el) {
-        var target = this.moveitem.el;
         var data = this.moveitem.data;
-
         let endx = e.screenX;
         let endy = e.screenY;
 
@@ -251,11 +259,41 @@ export default {
         document.selection.empty()
       }
     },
+    add_dargstart_handler(e, from, to) {
+      this.mode = 2;
+      to.tx = this.format_point(to.tx);
+      to.ty = this.format_point(to.ty);
+      this.line_temp = {
+        from: from,
+        to: to
+      }
+      //跟随鼠标移动
+      this.moveitem.startx = e.screenX;
+      this.moveitem.starty = e.screenY;
+      this.moveitem.elx = this.line_temp.to.tx;
+      this.moveitem.ely = this.line_temp.to.ty;
+      this.moveitem.el = e.currentTarget;
+      this.moveitem.data = this.line_temp.to;
+    },
     init() {
       document.addEventListener("mousemove", this.mousemove_handler)
       document.addEventListener("mouseup", () => {
         this.moveitem.el = null;
         this.moveitem.data = null;
+        if (this.mode == 2 && this.line_temp) {
+          let to = {
+            id: parseInt(Math.random() * 1000000),
+            tx: 0,
+            ty: 0,
+            width: 0,
+            height: 0,
+            text: "新元素",
+            ...this.line_temp.to
+          }
+          this.addnew(to);
+          this.addline(this.line_temp.from, to);
+          this.line_temp = null;
+        }
       })
       this.addline();
     }
@@ -274,6 +312,39 @@ export default {
     overflow: hidden;
     position: relative;
     background: @bg;
+    .svg-vue-toolbar {
+        height: 45px;
+        padding-bottom: 5px;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 100;
+        .svg-vue-toolbar-container {
+            width: 100%;
+            height: 100%;
+            background-color: #FFFFFF;
+            border-bottom: 1px solid @bordercolor1;
+            display: flex;
+            &::before {
+                content: ' ';
+                position: absolute;
+                bottom: 6px;
+                left: 0;
+                width: 100%;
+                height: 1px;
+                box-shadow: 0 -5px 30px 0 black;
+            }
+            .svg-vue-toolbar-container-panel {
+                width: 0;
+                flex: auto;
+                display: flex;
+                .drop-down {
+                    width: 0;
+                }
+            }
+        }
+    }
     .svg_container {
         width: 100%;
         height: 100%;
@@ -298,6 +369,41 @@ export default {
         .marker_start {
             fill: @linecolor;
         }
+    }
+    .svg-vue-item-bar {
+        width: 0;
+        height: 0;
+        position: absolute;
+        top: 0;
+        left: 0;
+        a {
+            visibility: hidden;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        &.show {
+            a {
+                visibility: visible;
+            }
+        }
+    }
+    .svg-vue-tree-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        width: 100%;
+    }
+    .new_circle {
+        circle {
+            fill: darken(@bordercolor1,5%);
+            stroke: @bordercolor1;
+        }
+    }
+    .line_temp {
+        stroke-dasharray: 3;
+        stroke-dashoffset: 2;
     }
 }
 </style>
