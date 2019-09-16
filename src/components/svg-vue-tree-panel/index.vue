@@ -5,9 +5,6 @@
       <div class="svg-vue-toolbar-container-panel">
         <line-style v-model='linetype'></line-style>
       </div>
-      <template v-if='line_temp'>
-        {{get_line_path(line_temp.from,line_temp.to)}}
-      </template>
     </div>
   </div>
   <svg v-if='items.length>0' xmlns="http://www.w3.org/2000/svg" class="svg_container" @mousedown="mousedown_handle($event)">
@@ -27,11 +24,21 @@
         <path class="line_temp" :d='get_line_path(line_temp.from,line_temp.to)' v-if='line_temp' marker-start="url(#m_start)" marker-end="url(#m_end)"></path>
       </g>
       <g class="svg_g_component">
-        <item-box :key='item.id' :item='item' v-for='(item,index) in items' @mousedown.native.stop="mousedown_handle($event,item)" @adddragstart='add_dargstart_handler'></item-box>
-				<item-box :item='line_temp.to' v-if='line_temp'></item-box>
+        <item-box :key='item.id' :istemp='moveitem.data==item' :item='item' v-for='(item,index) in items' @mousedown.native.stop="mousedown_handle($event,item)" @adddragstart='add_dargstart_handler'></item-box>
+        <item-box :item='line_temp.to' v-if='line_temp' :istemp='true'></item-box>
       </g>
     </g>
   </svg>
+  <div class="svg-vue-tree-line" v-if='moveitem.data&&!moveitem.isroot'>
+    <div class="top" :style='`transform:translateY(${moveitem.data.ty+svg_g_root.ty}px)`'>
+    </div>
+    <div class="bottom" :style='`transform:translateY(${moveitem.data.ty+svg_g_root.ty+moveitem.data.height}px)`'>
+    </div>
+    <div class="left" :style='`transform:translateX(${moveitem.data.tx+svg_g_root.tx}px)`'>
+    </div>
+    <div class="right" :style='`transform:translateX(${moveitem.data.tx+svg_g_root.tx+moveitem.data.width}px)`'>
+    </div>
+  </div>
   <div class="svg-vue-tree-empty">
     <a class="btn-add" @click='addfirst'>+</a>
   </div>
@@ -58,13 +65,14 @@ export default {
       moveitem: { //拖拽实时数据
         el: null,
         //鼠标按下时坐标
-        startx: 0,
+        startx: 0, //鼠标起始位置
         endx: 0,
         //鼠标按下时元素坐标
-        elx: 0,
+        elx: 0, //元素起始位置
         ely: 0,
-        unit: 10,
-        data: null
+        unit: 10, //拖拽每次移动距离
+        data: null, //拖拽元素数据
+        isroot: false //当前是否拖动容器
       }
     }
   },
@@ -73,7 +81,47 @@ export default {
     "line-style": linestyle
   },
   computed: {
+    //元素边界,
+    boundary() {
+      var obj = {
+        max: {
+          x: null,
+          y: null,
+        },
+        min: {
+          x: null,
+          y: null
+        }
+      };
 
+      this.items.forEach((item) => {
+
+        if (obj.max.x == null || obj.max.x < item.tx) {
+          obj.max.x = item.tx + item.width;
+        }
+        if (obj.max.y == null || obj.max.y < item.ty) {
+          obj.max.y = item.ty + item.height;
+        }
+
+        if (obj.min.x == null || obj.min.x > item.tx) {
+          obj.min.x = item.tx;
+        }
+        if (obj.min.y == null || obj.min.y > item.ty) {
+          obj.min.y = item.ty;
+        }
+
+      })
+
+      obj.max.x = obj.min.x = (obj.max.x + obj.min.x) / 2;
+      obj.max.y = obj.min.y = (obj.min.y + obj.max.y) / 2;
+
+      obj.max.y -= 81; //往上拖动距离减少100
+      obj.min.y += 50 //往下拖动距离减少100
+      obj.min.x += 100; //往右拖动距离减少100//往上拖动距离减少100
+      obj.max.x -= 100; //往左拖动距离减少100
+
+      return obj;
+    }
   },
   methods: {
     //格式化坐标，这里拖动时每次移动10px，为了保证拖动后元素能对齐，元素的坐标只能是10像素的倍数，移动单位可修改；
@@ -228,6 +276,7 @@ export default {
         this.moveitem.data = this.svg_g_root;
         this.moveitem.elx = this.svg_g_root.tx;
         this.moveitem.ely = this.svg_g_root.ty;
+        this.moveitem.isroot = true;
       }
     },
     //跟随鼠标移动，每次鼠标点击记录点击位置，元素位置，每次移动通过计算鼠标相对上次点击位置的距离，得出元素移动距离，减少误差；
@@ -275,9 +324,46 @@ export default {
       this.moveitem.el = e.currentTarget;
       this.moveitem.data = this.line_temp.to;
     },
+    addmousewheel(e) {
+      console.log(e);
+    },
     init() {
       document.addEventListener("mousemove", this.mousemove_handler)
       document.addEventListener("mouseup", () => {
+        if (this.moveitem.isroot) { //拖拽顶层容器时，边距检测，防止将元素移出视图区域
+          let ts = {
+            x: 0,
+            y: 0
+          }
+
+          let work_Width = this.$refs["svg_root"].offsetWidth;
+          let work_Height = this.$refs["svg_root"].offsetHeight;
+
+          let max_x = work_Width - this.boundary.min.x;
+          let max_y = work_Height - this.boundary.min.y;
+
+          let min_x = 0 - this.boundary.max.x;
+          let min_y = 0 - this.boundary.max.y;
+
+          if (this.moveitem.data.tx > max_x) {
+            ts.x = max_x;
+          } else if (this.moveitem.data.tx < min_x) {
+            ts.x = min_x;
+          } else {
+            ts.x = this.moveitem.data.tx;
+          }
+
+          if (this.moveitem.data.ty > max_y) {
+            ts.y = max_y;
+          } else if (this.moveitem.data.ty < min_y) {
+            ts.y = min_y;
+          } else {
+            ts.y = this.moveitem.data.ty;
+          }
+
+          this.moveitem.data.tx = ts.x;
+          this.moveitem.data.ty = ts.y;
+        }
         this.moveitem.el = null;
         this.moveitem.data = null;
         if (this.mode == 2 && this.line_temp) {
@@ -294,7 +380,10 @@ export default {
           this.addline(this.line_temp.from, to);
           this.line_temp = null;
         }
+        this.mode = 0;
+        this.moveitem.isroot = false;
       })
+      document.addEventListener("mousewheel", this.addmousewheel)
       this.addline();
     }
   },
@@ -394,6 +483,8 @@ export default {
         justify-content: center;
         height: 100%;
         width: 100%;
+        position: relative;
+        z-index: 11;
     }
     .new_circle {
         circle {
@@ -404,6 +495,32 @@ export default {
     .line_temp {
         stroke-dasharray: 3;
         stroke-dashoffset: 2;
+    }
+    .svg-vue-tree-line {
+        z-index: 10;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        .bottom,
+        .top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 0;
+            border-top: 1px dotted grey;
+        }
+        .left,
+        .right {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0;
+            border-left: 1px dotted grey;
+        }
     }
 }
 </style>
