@@ -16,7 +16,7 @@
         <circle cx='5' cy='5' r='5'></circle>
       </marker>
     </defs>
-    <g ref='svg_g_root' class="svg_g_root" :transform='`translate(${svg_g_root.tx},${svg_g_root.ty})`'>
+    <g ref='svg_g_root' class="svg_g_root" :transform='`translate(${svg_g_root.tx},${svg_g_root.ty}) scale(${svg_g_root.scale})`'>
       <g class="svg_g_line">
         <template v-for='(item,index) in lines'>
           <path :d='get_line_path(item.from,item.to)' marker-start="url(#m_start)" marker-end="url(#m_end)"></path>
@@ -59,6 +59,7 @@ export default {
       svg_g_root: {
         tx: 0,
         ty: 0,
+        scale: 1,
         width: 180,
         height: 50
       },
@@ -325,7 +326,19 @@ export default {
       this.moveitem.data = this.line_temp.to;
     },
     addmousewheel(e) {
-      console.log(e);
+      if (e.wheelDelta > 0) {
+        if (this.svg_g_root.scale + 0.1 >= 2) {
+          this.svg_g_root.scale = 2;
+        } else {
+          this.svg_g_root.scale += 0.1;
+        }
+      } else if (e.wheelDelta < 0) {
+        if (this.svg_g_root.scale - 0.1 <= 0.4) {
+          this.svg_g_root.scale = 0.3;
+        } else {
+          this.svg_g_root.scale -= 0.1;
+        }
+      }
     },
     init() {
       document.addEventListener("mousemove", this.mousemove_handler)
@@ -383,7 +396,8 @@ export default {
         this.mode = 0;
         this.moveitem.isroot = false;
       })
-      document.addEventListener("mousewheel", this.addmousewheel)
+      document.addEventListener("mousewheel", this.addmousewheel);
+      document.addEventListener("resize", this.setinitvalue);
       this.addline();
     }
   },
@@ -440,7 +454,11 @@ export default {
         background: none;
         cursor: pointer;
         position: relative;
+        box-shadow: 0 0 20px 1px white;
         z-index: 11;
+        .svg_g_root {
+            transform-origin: 50% 50%;
+        }
         .svg_g_component {
             position: relative;
             z-index: 2;
