@@ -82,12 +82,6 @@ export default {
     "line-style": linestyle
   },
   computed: {
-    m_unit() {
-      let unit = this.moveitem.unit * 10;
-      unit = unit * Math.abs((this.svg_g_root.scale - 1) / this.svg_g_root.scale);
-      unit = parseInt(unit / 10);
-      return unit;
-    },
     //元素边界矩形中心,
     boundary() {
       var obj = this.boundary_rect;
@@ -296,6 +290,12 @@ export default {
         this.moveitem.isroot = true;
       }
     },
+    unitscale(value) {
+      value = value * 10;
+      value = value + value * (1 - this.svg_g_root.scale) / this.svg_g_root.scale;
+      value = parseInt(value / 10);
+      return value;
+    },
     //跟随鼠标移动，每次鼠标点击记录点击位置，元素位置，每次移动通过计算鼠标相对上次点击位置的距离，得出元素移动距离，减少误差；
     //而不是通过移动多少鼠标就移动多少，这样会由于每次计算精确度的误差逐渐递增
     mousemove_handler(e) {
@@ -306,9 +306,13 @@ export default {
 
         let offsetx = endx - this.moveitem.startx;
         let osffsety = endy - this.moveitem.starty;
+        if (!this.moveitem.isroot) {
+          offsetx = this.unitscale(offsetx);
+          osffsety = this.unitscale(osffsety);
+        }
 
-        offsetx = parseInt(offsetx / this.m_unit) * this.m_unit;
-        osffsety = parseInt(osffsety / this.m_unit) * this.m_unit;
+        offsetx = parseInt(offsetx / this.moveitem.unit) * this.moveitem.unit;
+        osffsety = parseInt(osffsety / this.moveitem.unit) * this.moveitem.unit;
 
         let ox = this.moveitem.elx || 0;
         let oy = this.moveitem.ely || 0;
