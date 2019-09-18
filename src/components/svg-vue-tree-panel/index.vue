@@ -5,6 +5,10 @@
       <div class="svg-vue-toolbar-container-panel">
         <line-style v-model='linetype'></line-style>
       </div>
+      <div class="svg-vue-toolbar-container-panel">
+        <a class="save" @click='save'>保存</a>
+      </div>
+      {{m_unit}}===
     </div>
   </div>
   <svg v-if='items.length>0' xmlns="http://www.w3.org/2000/svg" class="svg_container" @mousedown="mousedown_handle($event)">
@@ -16,8 +20,14 @@
         <circle cx='5' cy='5' r='5'></circle>
       </marker>
     </defs>
-    <g ref='svg_g_root' class="svg_g_root" :transform='`translate(${svg_g_root.tx},${svg_g_root.ty}) scale(${svg_g_root.scale})`'>
+    <g x=0 y=0 ref='svg_g_root' class="svg_g_root" :transform='`translate(${svg_g_root.tx},${svg_g_root.ty}) scale(${svg_g_root.scale})`'>
       <g class="svg_g_line">
+        <template v-if='moveitem.data&&!moveitem.isroot'>
+          <path class="dotted_line" :d='`M-20000,${moveitem.data.ty} L20000,${moveitem.data.ty}`'></path>
+          <path class="dotted_line" :d='`M-20000,${moveitem.data.ty+moveitem.data.height} L20000,${moveitem.data.ty+moveitem.data.height}`'></path>
+          <path class="dotted_line" :d='`M${moveitem.data.tx},-20000 L${moveitem.data.tx},20000`'></path>
+          <path class="dotted_line" :d='`M${moveitem.data.tx+moveitem.data.width},-20000 L${moveitem.data.tx+moveitem.data.width},20000`'></path>
+        </template>
         <template v-for='(item,index) in lines'>
           <path :d='get_line_path(item.from,item.to)' marker-start="url(#m_start)" marker-end="url(#m_end)"></path>
         </template>
@@ -29,16 +39,6 @@
       </g>
     </g>
   </svg>
-  <div class="svg-vue-tree-line" v-if='moveitem.data&&!moveitem.isroot'>
-    <div class="top" :style='`transform:translateY(${moveitem.data.ty+svg_g_root.ty}px)`'>
-    </div>
-    <div class="bottom" :style='`transform:translateY(${moveitem.data.ty+svg_g_root.ty+moveitem.data.height}px)`'>
-    </div>
-    <div class="left" :style='`transform:translateX(${moveitem.data.tx+svg_g_root.tx}px)`'>
-    </div>
-    <div class="right" :style='`transform:translateX(${moveitem.data.tx+svg_g_root.tx+moveitem.data.width}px)`'>
-    </div>
-  </div>
   <div class="svg-vue-tree-empty">
     <a class="btn-add" @click='addfirst'>+</a>
   </div>
@@ -82,8 +82,29 @@ export default {
     "line-style": linestyle
   },
   computed: {
-    //元素边界,
+    m_unit() {
+      let unit = this.moveitem.unit * 10;
+      unit = unit * Math.abs((this.svg_g_root.scale - 1) / this.svg_g_root.scale);
+      unit = parseInt(unit / 10);
+      return unit;
+    },
+    //元素边界矩形中心,
     boundary() {
+      var obj = this.boundary_rect;
+      obj.max.x = obj.min.x = (obj.max.x + obj.min.x) / 2;
+      obj.max.y = obj.min.y = (obj.min.y + obj.max.y) / 2;
+
+      obj.max.y -= 39 //往上拖动距离减少100
+      // obj.min.y += 50; //往下拖动距离减少100
+      //
+      // obj.max.x -= 100; //往左拖动距离减少100
+      // obj.min.x += 100; //往右拖动距离减少100//
+
+
+      return obj;
+    },
+    //边界矩形
+    boundary_rect() {
       var obj = {
         max: {
           x: null,
@@ -96,35 +117,30 @@ export default {
       };
 
       this.items.forEach((item) => {
-
         if (obj.max.x == null || obj.max.x < item.tx) {
-          obj.max.x = item.tx + item.width;
+          obj.max.x = item.tx;
         }
         if (obj.max.y == null || obj.max.y < item.ty) {
-          obj.max.y = item.ty + item.height;
+          obj.max.y = item.ty;
         }
 
         if (obj.min.x == null || obj.min.x > item.tx) {
-          obj.min.x = item.tx;
+          obj.min.x = item.tx + item.width;
         }
         if (obj.min.y == null || obj.min.y > item.ty) {
-          obj.min.y = item.ty;
+          obj.min.y = item.ty + item.height;
         }
 
       })
-
-      obj.max.x = obj.min.x = (obj.max.x + obj.min.x) / 2;
-      obj.max.y = obj.min.y = (obj.min.y + obj.max.y) / 2;
-
-      obj.max.y -= 81; //往上拖动距离减少100
-      obj.min.y += 50 //往下拖动距离减少100
-      obj.min.x += 100; //往右拖动距离减少100//往上拖动距离减少100
-      obj.max.x -= 100; //往左拖动距离减少100
-
       return obj;
     }
   },
   methods: {
+    save() {
+      localStorage.setItem("items", JSON.stringify(this.items));
+      localStorage.setItem("lines", JSON.stringify(this.lines));
+      alert("已保存至本地！");
+    },
     //格式化坐标，这里拖动时每次移动10px，为了保证拖动后元素能对齐，元素的坐标只能是10像素的倍数，移动单位可修改；
     format_point(pointvalue) {
       return parseInt(pointvalue / this.moveitem.unit) * this.moveitem.unit;
@@ -291,8 +307,8 @@ export default {
         let offsetx = endx - this.moveitem.startx;
         let osffsety = endy - this.moveitem.starty;
 
-        offsetx = parseInt(offsetx / this.moveitem.unit) * this.moveitem.unit;
-        osffsety = parseInt(osffsety / this.moveitem.unit) * this.moveitem.unit;
+        offsetx = parseInt(offsetx / this.m_unit) * this.m_unit;
+        osffsety = parseInt(osffsety / this.m_unit) * this.m_unit;
 
         let ox = this.moveitem.elx || 0;
         let oy = this.moveitem.ely || 0;
@@ -339,6 +355,36 @@ export default {
           this.svg_g_root.scale -= 0.1;
         }
       }
+    },
+    //自动根据视窗大小，将元素呈现在中间
+    autoview() {
+      let work_Width = this.$refs["svg_root"].offsetWidth;
+      let work_Height = this.$refs["svg_root"].offsetHeight;
+      let g_width = this.boundary_rect.max.x - this.boundary_rect.min.x;
+      let g_height = this.boundary_rect.max.y - this.boundary_rect.min.y;
+
+      let dis_x = g_width - work_Width;
+      let dis_y = g_height - work_Height;
+
+      let scalex = 1;
+      if (dis_x > 0) {
+        scalex = work_Width / g_width;
+        this.svg_g_root.tx = 0;
+      } else {
+        this.svg_g_root.tx = 0 - dis_x;
+      }
+
+      let scaley = 1;
+      if (dis_y > 0) {
+        scaley = work_Height / g_height;
+        this.svg_g_root.ty = 0;
+      } else {
+        this.svg_g_root.ty = 0 - dis_y;
+      }
+
+      let scale = scalex > scaley ? scaley : scalex;
+      scale = parseInt(scale * 10) / 10;
+      this.svg_g_root.scale = scale;
     },
     init() {
       document.addEventListener("mousemove", this.mousemove_handler)
@@ -397,8 +443,13 @@ export default {
         this.moveitem.isroot = false;
       })
       document.addEventListener("mousewheel", this.addmousewheel);
-      document.addEventListener("resize", this.setinitvalue);
-      this.addline();
+      window.addEventListener("resize", this.autoview);
+      if (localStorage.getItem("items")) {
+        this.items = JSON.parse(localStorage.getItem("items"))
+      }
+      // this.$nextTick(() => {
+      //   this.autoview();
+      // })
     }
   },
   mounted() {
@@ -445,6 +496,16 @@ export default {
                 .drop-down {
                     width: 0;
                 }
+                a {
+                    display: flex;
+                    cursor: pointer;
+                    min-width: 60px;
+                    align-items: center;
+                    justify-content: center;
+                    &:hover {
+                        background-color: @bg;
+                    }
+                }
             }
         }
     }
@@ -470,6 +531,8 @@ export default {
                 stroke: @linecolor;
                 stroke-width: 0.8;
                 fill: none;
+                stroke-linecap: round;
+                stroke-linejoin: round;
             }
         }
         .marker_end,
@@ -514,31 +577,11 @@ export default {
         stroke-dasharray: 3;
         stroke-dashoffset: 2;
     }
-    .svg-vue-tree-line {
-        z-index: 10;
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        .bottom,
-        .top {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 0;
-            border-top: 1px dotted grey;
-        }
-        .left,
-        .right {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 0;
-            border-left: 1px dotted grey;
-        }
+    .dotted_line {
+        stroke-dasharray: 3;
+        stroke-dashoffset: 50;
+        stroke: @bordercolor1;
+        stroke-width: 1;
     }
 }
 </style>
