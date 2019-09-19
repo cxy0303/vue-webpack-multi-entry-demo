@@ -27,7 +27,7 @@
           <path class="dotted_line" :d='`M${moveitem.data.tx},-20000 L${moveitem.data.tx},20000`'></path>
           <path class="dotted_line" :d='`M${moveitem.data.tx+moveitem.data.width},-20000 L${moveitem.data.tx+moveitem.data.width},20000`'></path>
         </template>
-        <template v-for='(item,index) in lines'>
+        <template v-for='(item,index) in lines_obj'>
           <path :d='get_line_path(item.from,item.to)' marker-start="url(#m_start)" marker-end="url(#m_end)"></path>
         </template>
         <path class="line_temp" :d='get_line_path(line_temp.from,line_temp.to)' v-if='line_temp' marker-start="url(#m_start)" marker-end="url(#m_end)"></path>
@@ -81,6 +81,20 @@ export default {
     "line-style": linestyle
   },
   computed: {
+    lines_obj() {
+      var temp = {};
+      this.items.forEach((item) => {
+        temp[item.id] = item;
+      })
+      var lines = [];
+      this.lines.forEach((item) => {
+        lines.push({
+          from: temp[item.from],
+          to: temp[item.to]
+        })
+      })
+      return lines;
+    },
     //元素边界矩形中心,
     boundary() {
       var obj = this.boundary_rect;
@@ -376,7 +390,7 @@ export default {
       for (let i = 0; i < compoent_root.children.length; i++) {
         let item = compoent_root.children[i];
         let rect = item.getBoundingClientRect();
-        let max_x = outerrect ? rect.left : rect.right;
+        let max_x = outerrect ? rect.right : rect.left;
         if (obj.max.x == null || obj.max.x < max_x) {
           obj.max.x = max_x;
         }
@@ -399,6 +413,9 @@ export default {
     },
     //自动根据视窗大小，将元素呈现在中间
     autoview() {
+      if (!this.$refs["svg_g_components"])
+        return;
+
       var boundary = this.$refs["svg_g_components"].getBoundingClientRect();
 
       let work_Width = this.$refs["svg_root"].offsetWidth;
@@ -413,20 +430,15 @@ export default {
       let scalex = 1;
       if (dis_x > 0) {
         scalex = work_Width / g_width;
-        this.svg_g_root.tx = (0 - dis_x / 2 - boundary.left) * scalex;
-      } else {
-        this.svg_g_root.tx = (dis_x / 2 + boundary.left) * scalex;
       }
 
       let scaley = 1;
       if (dis_y > 0) {
         scaley = work_Height / g_height;
-        this.svg_g_root.ty = (0 - dis_y / 2 - boundary.top) * scalex;
-      } else {
-        this.svg_g_root.ty = (dis_y / 2 + boundary.top) * scalex;
       }
 
-
+      this.svg_g_root.tx += (0 - dis_x / 2 - boundary.left) * scalex;
+      this.svg_g_root.ty += (0 - dis_y / 2 - boundary.top) * scalex;
       let scale = scalex > scaley ? scaley : scalex;
       scale = parseInt(scale * 10) / 10;
       this.svg_g_root.scale = scale;
@@ -442,6 +454,8 @@ export default {
 
       let work_Width = this.$refs["svg_root"].offsetWidth;
       let work_Height = this.$refs["svg_root"].offsetHeight;
+
+
       if (boundary.min.x > work_Width) {
         ts.x = work_Width - boundary.min.x;
       } else if (boundary.max.x < 0) {
@@ -477,7 +491,7 @@ export default {
             ...this.line_temp.to
           }
           this.addnew(to);
-          this.addline(this.line_temp.from, to);
+          this.addline(this.line_temp.from.id, to.id);
           this.line_temp = null;
         }
         this.mode = 0;
@@ -487,6 +501,7 @@ export default {
       // window.addEventListener("resize", this.autoview);
       if (localStorage.getItem("items")) {
         this.items = JSON.parse(localStorage.getItem("items"))
+				this.lines = JSON.parse(localStorage.getItem("lines"))
       }
       this.$nextTick(() => {
         this.autoview();
