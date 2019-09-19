@@ -8,7 +8,6 @@
       <div class="svg-vue-toolbar-container-panel">
         <a class="save" @click='save'>保存</a>
       </div>
-      {{m_unit}}===
     </div>
   </div>
   <svg v-if='items.length>0' xmlns="http://www.w3.org/2000/svg" class="svg_container" @mousedown="mousedown_handle($event)">
@@ -33,7 +32,7 @@
         </template>
         <path class="line_temp" :d='get_line_path(line_temp.from,line_temp.to)' v-if='line_temp' marker-start="url(#m_start)" marker-end="url(#m_end)"></path>
       </g>
-      <g class="svg_g_component">
+      <g class="svg_g_component" ref='svg_g_components'>
         <item-box :key='item.id' :istemp='moveitem.data==item' :item='item' v-for='(item,index) in items' @mousedown.native.stop="mousedown_handle($event,item)" @adddragstart='add_dargstart_handler'></item-box>
         <item-box :item='line_temp.to' v-if='line_temp' :istemp='true'></item-box>
       </g>
@@ -85,8 +84,8 @@ export default {
     //元素边界矩形中心,
     boundary() {
       var obj = this.boundary_rect;
-      obj.max.x = obj.min.x = (obj.max.x + obj.min.x) / 2;
-      obj.max.y = obj.min.y = (obj.min.y + obj.max.y) / 2;
+      // obj.max.x = obj.min.x = (obj.max.x + obj.min.x) / 2;
+      // obj.max.y = obj.min.y = (obj.min.y + obj.max.y) / 2;
 
       obj.max.y -= 39 //往上拖动距离减少100
       // obj.min.y += 50; //往下拖动距离减少100
@@ -290,9 +289,10 @@ export default {
         this.moveitem.isroot = true;
       }
     },
-    unitscale(value) {
+    unitscale(value, isrevser) {
+      let rate = isrevser ? this.svg_g_root.scale - 1 : 1 - this.svg_g_root.scale;
       value = value * 10;
-      value = value + value * (1 - this.svg_g_root.scale) / this.svg_g_root.scale;
+      value = value + value * rate / this.svg_g_root.scale;
       value = parseInt(value / 10);
       return value;
     },
@@ -360,12 +360,52 @@ export default {
         }
       }
     },
+    //外部bound，所有元素矩形区域，默认最外面的元素不进行计算
+    getbounding(outerrect) {
+      var obj = {
+        max: {
+          x: null,
+          y: null,
+        },
+        min: {
+          x: null,
+          y: null
+        }
+      };
+      var compoent_root = this.$refs["svg_g_components"];
+      for (let i = 0; i < compoent_root.children.length; i++) {
+        let item = compoent_root.children[i];
+        let rect = item.getBoundingClientRect();
+        let max_x = outerrect ? rect.left : rect.right;
+        if (obj.max.x == null || obj.max.x < max_x) {
+          obj.max.x = max_x;
+        }
+
+        let min_x = outerrect ? rect.left : rect.right;
+        if (obj.min.x == null || obj.min.x > min_x) {
+          obj.min.x = min_x;
+        }
+
+        let max_y = outerrect ? rect.bottom : rect.top;
+        if (obj.max.y == null || obj.max.y < max_y) {
+          obj.max.y = max_y;
+        }
+        let min_y = outerrect ? rect.top : rect.bottom;
+        if (obj.min.y == null || obj.min.y > min_y) {
+          obj.min.y = min_y;
+        }
+      }
+      return obj;
+    },
     //自动根据视窗大小，将元素呈现在中间
     autoview() {
+      var boundary = this.$refs["svg_g_components"].getBoundingClientRect();
+
       let work_Width = this.$refs["svg_root"].offsetWidth;
       let work_Height = this.$refs["svg_root"].offsetHeight;
-      let g_width = this.boundary_rect.max.x - this.boundary_rect.min.x;
-      let g_height = this.boundary_rect.max.y - this.boundary_rect.min.y;
+
+      let g_width = boundary.width;
+      let g_height = boundary.height;
 
       let dis_x = g_width - work_Width;
       let dis_y = g_height - work_Height;
@@ -373,59 +413,56 @@ export default {
       let scalex = 1;
       if (dis_x > 0) {
         scalex = work_Width / g_width;
-        this.svg_g_root.tx = 0;
+        this.svg_g_root.tx = (0 - dis_x / 2 - boundary.left) * scalex;
       } else {
-        this.svg_g_root.tx = 0 - dis_x;
+        this.svg_g_root.tx = (dis_x / 2 + boundary.left) * scalex;
       }
 
       let scaley = 1;
       if (dis_y > 0) {
         scaley = work_Height / g_height;
-        this.svg_g_root.ty = 0;
+        this.svg_g_root.ty = (0 - dis_y / 2 - boundary.top) * scalex;
       } else {
-        this.svg_g_root.ty = 0 - dis_y;
+        this.svg_g_root.ty = (dis_y / 2 + boundary.top) * scalex;
       }
+
 
       let scale = scalex > scaley ? scaley : scalex;
       scale = parseInt(scale * 10) / 10;
       this.svg_g_root.scale = scale;
     },
+
+    autoboundary() {
+      let boundary = this.getbounding();
+
+      let ts = {
+        x: 0,
+        y: 0
+      }
+
+      let work_Width = this.$refs["svg_root"].offsetWidth;
+      let work_Height = this.$refs["svg_root"].offsetHeight;
+      if (boundary.min.x > work_Width) {
+        ts.x = work_Width - boundary.min.x;
+      } else if (boundary.max.x < 0) {
+        ts.x = 0 - boundary.max.x;
+      }
+
+      if (boundary.min.y > work_Height) {
+        ts.y = work_Height - boundary.min.y;
+      } else if (boundary.max.y < 0) {
+        ts.y = 0 - boundary.max.y;
+      }
+
+      this.moveitem.data.tx += ts.x;
+      this.moveitem.data.ty += ts.y;
+    },
+
     init() {
       document.addEventListener("mousemove", this.mousemove_handler)
       document.addEventListener("mouseup", () => {
         if (this.moveitem.isroot) { //拖拽顶层容器时，边距检测，防止将元素移出视图区域
-          let ts = {
-            x: 0,
-            y: 0
-          }
-
-          let work_Width = this.$refs["svg_root"].offsetWidth;
-          let work_Height = this.$refs["svg_root"].offsetHeight;
-
-          let max_x = work_Width - this.boundary.min.x;
-          let max_y = work_Height - this.boundary.min.y;
-
-          let min_x = 0 - this.boundary.max.x;
-          let min_y = 0 - this.boundary.max.y;
-
-          if (this.moveitem.data.tx > max_x) {
-            ts.x = max_x;
-          } else if (this.moveitem.data.tx < min_x) {
-            ts.x = min_x;
-          } else {
-            ts.x = this.moveitem.data.tx;
-          }
-
-          if (this.moveitem.data.ty > max_y) {
-            ts.y = max_y;
-          } else if (this.moveitem.data.ty < min_y) {
-            ts.y = min_y;
-          } else {
-            ts.y = this.moveitem.data.ty;
-          }
-
-          this.moveitem.data.tx = ts.x;
-          this.moveitem.data.ty = ts.y;
+          this.autoboundary();
         }
         this.moveitem.el = null;
         this.moveitem.data = null;
@@ -447,13 +484,13 @@ export default {
         this.moveitem.isroot = false;
       })
       document.addEventListener("mousewheel", this.addmousewheel);
-      window.addEventListener("resize", this.autoview);
+      // window.addEventListener("resize", this.autoview);
       if (localStorage.getItem("items")) {
         this.items = JSON.parse(localStorage.getItem("items"))
       }
-      // this.$nextTick(() => {
-      //   this.autoview();
-      // })
+      this.$nextTick(() => {
+        this.autoview();
+      })
     }
   },
   mounted() {
@@ -470,6 +507,7 @@ export default {
     overflow: hidden;
     position: relative;
     background: @bg;
+    padding-top: 39px;
     .svg-vue-toolbar {
         height: 45px;
         padding-bottom: 5px;
