@@ -3,17 +3,18 @@
   <rect x='-40' y='-40' :width='item.width+80' :height='item.height+80' fill='transparent'>
   </rect>
   <template v-if='showbar&&!istemp' v-for='(btn,key) in btns'>
-    <g @mousedown.stop='mousedown_handle($event,key)' :transform='`translate(${btn.x},${btn.y})`' >
+    <g @mousedown.stop='mousedown_handle($event,key)' :transform='`translate(${btn.x},${btn.y})`'>
       <circle class="item-box-bar" :r='r'>
       </circle>
       <text transform='translate(-5,5)' fill='#DDDDDD'>+</text>
     </g>
   </template>
-  <item-tag :item='item' :selected='showbar'></item-tag>
+  <component :is='itemtype' :item='item' :selected='showbar' :key='item.id'></component>
 </g>
 </template>
 <script>
 import itemtag from './itemtag'
+import itemcard from './itemcard'
 export default {
   props: {
     item: {
@@ -36,7 +37,8 @@ export default {
     }
   },
   components: {
-    'item-tag': itemtag
+    'item-tag': itemtag,
+    'item-card': itemcard
   },
   data() {
     var cr = 25;
@@ -63,12 +65,18 @@ export default {
       }
     }
   },
+  computed: {
+    itemtype() {
+      return this.item && this.item.type ? this.item.type : "item-card";
+    }
+  },
   methods: {
     mouseover(e) {
       this.showbar = true;
     },
     mouseout(e) {
-      if (e.toElement&&e.toElement.parentNode&&e.toElement.parentNode != e.currentTarget&&e.toElement.parentNode.parentNode != e.currentTarget) {
+      let toElement = e.relatedTarget || e.toElement;
+      if (toElement && toElement.parentNode && toElement.parentNode != e.currentTarget && toElement.parentNode.parentNode != e.currentTarget) {
         this.showbar = false;
       }
     },

@@ -1,28 +1,46 @@
 @bg: #f2f2f2;
-@linecolor: black;
+
 @bordercolor: black;
-@bordercolor1: #DDDDDD;
-@fontcolor1: #DDDDDD;
-@fontcolor2: darken(#DDDDDD,10%);
+
+@bordercolor1: #DCDFE6;
+@bordercolor2: #E4E7ED;
+@bordercolor3: #EBEEF5;
+@bordercolor4: #F2F6FC;
+
+@fontcolor1:#303133;
+@fontcolor2: #606266;
+@fontcolor3: #909399;
+@fontcolor4: #C0C4CC;
+
 @shadow: darken(#DDDDDD,10%);
+
+@seleced: #0066CC;
+@primary: #0099FF;
+@warning:#409EFF;
+@success:#67C23A;
+@danger:#F56C6C;
+@info:#909399;
+
+@linecolor: @fontcolor3;
 
 * {
 	box-sizing: border-box;
 }
 
 .btn-add {
-		width: 50px;
-		height: 50px;
-		border: 1px solid @bordercolor1;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background-color: white;
-		color: @fontcolor2;
-		cursor: pointer;
-		font-size: 20px;
-		&:hover {
-				box-shadow: 0 0 30px 0 @shadow;
-		}
+	width: 50px;
+	height: 50px;
+	border: 1px solid @bordercolor1;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: white;
+	color: @fontcolor2;
+	cursor: pointer;
+	font-size: 20px;
+
+	&:hover {
+		box-shadow: 0 0 30px 0 @shadow;
+	}
 }

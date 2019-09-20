@@ -158,11 +158,12 @@ export default {
     addfirst() {
       let item = {
         id: parseInt(Math.random() * 1000000),
-        width: 160,
-        height: 45,
         tx: 0,
         ty: 0,
-        text: "新元素"
+        width: 300,
+        height: 120,
+        subject: '新元素',
+        text: "有很多用户留言，希望看一下各城市2019年累计的涨幅数据。为了满足用户需求，我们准备每月推出一期年涨幅月报。"
       }
       let root_el = this.$refs["svg_root"];
       item.tx = this.format_point(parseFloat(root_el.offsetWidth) / 2 - item.width / 2);
@@ -387,8 +388,16 @@ export default {
         }
       };
       var compoent_root = this.$refs["svg_g_components"];
-      for (let i = 0; i < compoent_root.children.length; i++) {
-        let item = compoent_root.children[i];
+      if (!compoent_root) {
+        return;
+      }
+      var children = compoent_root.children || compoent_root.childNodes;
+      for (let i = 0; i < children.length; i++) {
+        let item = children[i];
+
+        if (item.nodeType != Node.ELEMENT_NODE) {
+          continue;
+        }
         let rect = item.getBoundingClientRect();
         let max_x = outerrect ? rect.right : rect.left;
         if (obj.max.x == null || obj.max.x < max_x) {
@@ -485,10 +494,11 @@ export default {
             id: parseInt(Math.random() * 1000000),
             tx: 0,
             ty: 0,
-            width: 0,
-            height: 0,
-            text: "新元素",
-            ...this.line_temp.to
+            width: 300,
+            height: 120,
+            subject: '新元素',
+            ...this.line_temp.to,
+            text: "有很多用户留言，希望看一下各城市2019年累计的涨幅数据。为了满足用户需求，我们准备每月推出一期年涨幅月报。"
           }
           this.addnew(to);
           this.addline(this.line_temp.from.id, to.id);
@@ -501,7 +511,7 @@ export default {
       // window.addEventListener("resize", this.autoview);
       if (localStorage.getItem("items")) {
         this.items = JSON.parse(localStorage.getItem("items"))
-				this.lines = JSON.parse(localStorage.getItem("lines"))
+        this.lines = JSON.parse(localStorage.getItem("lines"))
       }
       this.$nextTick(() => {
         this.autoview();
