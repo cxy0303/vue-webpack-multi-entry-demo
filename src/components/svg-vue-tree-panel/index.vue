@@ -21,15 +21,20 @@
     </defs>
     <g x=0 y=0 ref='svg_g_root' class="svg_g_root" :transform='`translate(${svg_g_root.tx},${svg_g_root.ty}) scale(${svg_g_root.scale})`'>
       <g class="svg_g_line">
+        <!---拖动时校准虚线start -->
         <template v-if='moveitem.data&&!moveitem.isroot'>
           <path class="dotted_line" :d='`M-20000,${moveitem.data.ty} L20000,${moveitem.data.ty}`'></path>
           <path class="dotted_line" :d='`M-20000,${moveitem.data.ty+moveitem.data.height} L20000,${moveitem.data.ty+moveitem.data.height}`'></path>
           <path class="dotted_line" :d='`M${moveitem.data.tx},-20000 L${moveitem.data.tx},20000`'></path>
           <path class="dotted_line" :d='`M${moveitem.data.tx+moveitem.data.width},-20000 L${moveitem.data.tx+moveitem.data.width},20000`'></path>
         </template>
+        <!---拖动时校准虚线end -->
+
+        <!---组件之间连线start -->
         <template v-for='(item,index) in lines_obj'>
           <path :d='get_line_path(item.from,item.to)' marker-start="url(#m_start)" marker-end="url(#m_end)"></path>
         </template>
+        <!---组件之间连线end -->
         <path class="line_temp" :d='get_line_path(line_temp.from,line_temp.to)' v-if='line_temp' marker-start="url(#m_start)" marker-end="url(#m_end)"></path>
       </g>
       <g class="svg_g_component" ref='svg_g_components'>
@@ -49,6 +54,12 @@ import linestyle from './common/linestyle'
 export default {
   data() {
     return {
+      root_padding: {
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0
+      },
       mode: 0, //0:浏览模式;1:编辑模式;2:编辑-新增模式
       items: [],
       lines: [],
@@ -152,9 +163,11 @@ export default {
     format_point(pointvalue) {
       return parseInt(pointvalue / this.moveitem.unit) * this.moveitem.unit;
     },
+
     addnew(item) {
       this.items.push(item);
     },
+
     addfirst() {
       let item = {
         id: parseInt(Math.random() * 1000000),
@@ -170,6 +183,7 @@ export default {
       item.ty = this.format_point(parseFloat(root_el.offsetHeight) / 2 - item.height / 2);
       this.items.push(item);
     },
+
     addline(from, to) {
       if (from && to) {
         this.lines.push({
@@ -178,6 +192,7 @@ export default {
         })
       }
     },
+
     get_x_line_angel(px, py, mx, my) {
       var x = Math.abs(px - mx);
       var y = Math.abs(py - my);
@@ -212,6 +227,7 @@ export default {
 
       return angle;
     },
+
     get_line_path(from, to) {
       let x1 = from.tx + from.width / 2;
       let y1 = from.ty + from.height / 2;
@@ -288,6 +304,7 @@ export default {
         return `M${startx},${starty} C${startx},${starty} ${x},${y} ${endx},${endy}`;
       }
     },
+
     mousedown_handle(e, item) {
       this.moveitem.startx = e.screenX;
       this.moveitem.starty = e.screenY;
@@ -304,6 +321,7 @@ export default {
         this.moveitem.isroot = true;
       }
     },
+
     unitscale(value, isrevser) {
       let rate = isrevser ? this.svg_g_root.scale - 1 : 1 - this.svg_g_root.scale;
       value = value * 10;
@@ -344,6 +362,7 @@ export default {
         document.selection.empty()
       }
     },
+
     add_dargstart_handler(e, from, to) {
       this.mode = 2;
       to.tx = this.format_point(to.tx);
@@ -360,6 +379,7 @@ export default {
       this.moveitem.el = e.currentTarget;
       this.moveitem.data = this.line_temp.to;
     },
+
     addmousewheel(e) {
       if (e.wheelDelta > 0) {
         if (this.svg_g_root.scale + 0.1 >= 2) {
@@ -461,20 +481,25 @@ export default {
         y: 0
       }
 
+      //容器大小，如果容器坐标不是（0，0）要计算
+      if (!this.$refs["svg_root"])
+        return;
+      let root_rect = this.$refs["svg_root"].getBoundingClientRect();
+      let root_x = root_rect.x;
+      let root_y = root_rect.y;
       let work_Width = this.$refs["svg_root"].offsetWidth;
       let work_Height = this.$refs["svg_root"].offsetHeight;
 
-
       if (boundary.min.x > work_Width) {
-        ts.x = work_Width - boundary.min.x;
+        ts.x = work_Width - boundary.min.x + root_x + this.root_padding.right; //往左移出边界
       } else if (boundary.max.x < 0) {
-        ts.x = 0 - boundary.max.x;
+        ts.x = 0 - boundary.max.x + root_x + this.root_padding.left; //往右移出边界
       }
 
       if (boundary.min.y > work_Height) {
-        ts.y = work_Height - boundary.min.y;
+        ts.y = work_Height - boundary.min.y + root_y + this.root_padding.bottom; //往下移出边界
       } else if (boundary.max.y < 0) {
-        ts.y = 0 - boundary.max.y;
+        ts.y = 0 - boundary.max.y + root_y + this.root_padding.top; //往上移出边界
       }
 
       this.moveitem.data.tx += ts.x;
@@ -482,6 +507,15 @@ export default {
     },
 
     init() {
+      var root = this.$refs["svg_root"];
+
+      this.root_padding = {
+        top: parseInt(this.getStyle(root, "paddingTop")),
+        left: parseInt(this.getStyle(root, "paddingLeft")),
+        bottom: parseInt(this.getStyle(root, "paddingBottom")),
+        right: parseInt(this.getStyle(root, "paddingRight"))
+      }
+
       document.addEventListener("mousemove", this.mousemove_handler)
       document.addEventListener("mouseup", () => {
         if (this.moveitem.isroot) { //拖拽顶层容器时，边距检测，防止将元素移出视图区域
@@ -516,6 +550,14 @@ export default {
       this.$nextTick(() => {
         this.autoview();
       })
+    },
+
+    getStyle(obj, attr) {
+      if (obj.currentStyle) {
+        return obj.currentStyle[attr]; //IE 6 7 8 兼容
+      } else {
+        return getComputedStyle(obj)[attr]; //谷歌 火狐等浏览器兼容
+      }
     }
   },
   mounted() {
@@ -532,10 +574,11 @@ export default {
     overflow: hidden;
     position: relative;
     background: @bg;
-    padding-top: 39px;
+    padding-top: 55px;
+
     .svg-vue-toolbar {
-        height: 45px;
-        padding-bottom: 5px;
+        height: 55px;
+        padding-bottom: 1px;
         position: absolute;
         top: 0;
         left: 0;
@@ -550,7 +593,7 @@ export default {
             &::before {
                 content: ' ';
                 position: absolute;
-                bottom: 6px;
+                bottom: 1px;
                 left: 0;
                 width: 100%;
                 height: 1px;
