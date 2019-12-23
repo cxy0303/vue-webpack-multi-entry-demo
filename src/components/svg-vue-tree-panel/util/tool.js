@@ -30,7 +30,7 @@ let get_text_wrap = function(text, fontsize, rowwidth, rowcount) {
   var current_index = 0;
   var ZH_W = fontsize;
   var EL_W = fontsize / 2;
-	
+
   while (current_row_index < row_count && current_index < lettercount) {
     var letter = text[current_index];
     var width = isZH(letter) ? ZH_W : EL_W;
@@ -55,10 +55,26 @@ let get_text_wrap = function(text, fontsize, rowwidth, rowcount) {
   return data;
 }
 
+let get_text_width = function(text, fontsize) {
+  let lettercount = text.length;
+  var ZH_W = fontsize;
+  var EL_W = fontsize / 2;
+  var current_row_width = 0;
+  var current_index = 0;
+  while (current_index < lettercount) {
+    var letter = text[current_index];
+    var width = isZH(letter) ? ZH_W : EL_W;
+    current_row_width += width;
+    current_index++;
+  }
+  return current_row_width;
+}
+
 var tool = {
   isZH: isZH,
   isEN: isEN,
-  get_text_wrap: get_text_wrap
+  get_text_wrap: get_text_wrap,
+  get_text_width: get_text_width
 }
 
 

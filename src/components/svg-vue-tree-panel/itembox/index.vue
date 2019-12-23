@@ -2,14 +2,14 @@
 <g class="item-box selected" :transform='`translate(${item.tx},${item.ty})`' @mouseover.stop="mouseover" @mouseout.stop='mouseout'>
   <rect x='-40' y='-40' :width='item.width+80' :height='item.height+80' fill='transparent'>
   </rect>
-  <template v-if='showbar&&!istemp' v-for='(btn,key) in btns'>
+  <!-- <template v-if='showbar&&!istemp' v-for='(btn,key) in btns'>
     <g @mousedown.stop='mousedown_handle($event,key)' :transform='`translate(${btn.x},${btn.y})`'>
       <circle class="item-box-bar" :r='r'>
       </circle>
       <text transform='translate(-5,5)' fill='#DDDDDD'>+</text>
     </g>
-  </template>
-  <component :is='itemtype' :item='item' :selected='showbar' :key='item.id'></component>
+  </template> -->
+  <component :is='itemtype' :item='item' :selected='showbar' :key='item.id' @edit='edit'></component>
 </g>
 </template>
 <script>
@@ -22,8 +22,6 @@ export default {
       default () {
         return {
           id: '',
-          width: 160,
-          height: 50,
           text: '新元素',
           tx: 0,
           ty: 0
@@ -71,6 +69,9 @@ export default {
     }
   },
   methods: {
+    edit(item) {
+      this.$emit("edit",item);
+    },
     mouseover(e) {
       this.showbar = true;
     },
@@ -80,27 +81,28 @@ export default {
         this.showbar = false;
       }
     },
-    mousedown_handle(e, key) {
-      let to = {
-        tx: this.item.tx + this.item.width + this.r * 2 + 10,
-        ty: this.item.ty,
-        width: this.item.width,
-        height: this.item.height,
-        text: "新元素"
-      }
-
-      if (key == "top") {
-        to.tx = this.item.tx;
-        to.ty = this.item.ty - this.item.height - this.r * 2 + 10;
-      } else if (key == "bottom") {
-        to.tx = this.item.tx;
-        to.ty = this.item.ty + this.item.height + this.r * 2 + 10;
-      } else if (key == "left") {
-        to.tx = this.item.tx - this.r * 2 + 10 - this.item.width;
-        to.ty = this.item.ty;
-      }
-      this.$emit("adddragstart", e, this.item, to)
-    }
+    // mousedown_handle(e, key) {
+    //   let to = {
+    //     tx: this.item.tx + this.item.width + this.r * 2 + 10,
+    //     ty: this.item.ty,
+    //     width: this.item.width,
+    //     height: this.item.height,
+    //     text: "新元素"
+    //   }
+		//
+    //   if (key == "top") {
+    //     to.tx = this.item.tx;
+    //     to.ty = this.item.ty - this.item.height - this.r * 2 + 10;
+    //   } else if (key == "bottom") {
+    //     to.tx = this.item.tx;
+    //     to.ty = this.item.ty + this.item.height + this.r * 2 + 10;
+    //   } else if (key == "left") {
+    //     to.tx = this.item.tx - this.r * 2 + 10 - this.item.width;
+    //     to.ty = this.item.ty;
+    //   }
+		//
+    //   this.$emit("adddragstart", e, this.item, to)
+    // }
   }
 }
 </script>

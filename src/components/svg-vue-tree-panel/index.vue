@@ -8,6 +8,9 @@
       <div class="svg-vue-toolbar-container-panel">
         <a class="save" @click='save'>保存</a>
       </div>
+      <div class="svg-vue-toolbar-container-panel">
+        <a class="save" @click='clear'>清空</a>
+      </div>
     </div>
   </div>
   <svg v-if='items.length>0' xmlns="http://www.w3.org/2000/svg" class="svg_container" @mousedown="mousedown_handle($event)">
@@ -38,7 +41,7 @@
         <path class="line_temp" :d='get_line_path(line_temp.from,line_temp.to)' v-if='line_temp' marker-start="url(#m_start)" marker-end="url(#m_end)"></path>
       </g>
       <g class="svg_g_component" ref='svg_g_components'>
-        <item-box :key='item.id' :istemp='moveitem.data==item' :item='item' v-for='(item,index) in items' @mousedown.native.stop="mousedown_handle($event,item)" @adddragstart='add_dargstart_handler'></item-box>
+        <item-box :key='item.id' :istemp='moveitem.data==item' :item='item' v-for='(item,index) in items' @mousedown.native.stop="mousedown_handle($event,item)" @adddragstart='add_dargstart_handler' @edit='item_box_edit'></item-box>
         <item-box :item='line_temp.to' v-if='line_temp' :istemp='true'></item-box>
       </g>
     </g>
@@ -46,11 +49,13 @@
   <div class="svg-vue-tree-empty">
     <a class="btn-add" @click='addfirst'>+</a>
   </div>
+  <svg-input v-if='edititem' v-model='edititem' :root='svg_g_root' @cancel='edititem=null'></svg-input>
 </div>
 </template>
 <script>
 import itembox from './itembox'
 import linestyle from './common/linestyle'
+import svginput from './common/svginput/dialog'
 export default {
   data() {
     return {
@@ -84,12 +89,14 @@ export default {
         unit: 10, //拖拽每次移动距离
         data: null, //拖拽元素数据
         isroot: false //当前是否拖动容器
-      }
+      },
+      edititem: null //编辑实例
     }
   },
   components: {
     "item-box": itembox,
-    "line-style": linestyle
+    "line-style": linestyle,
+    "svg-input": svginput
   },
   computed: {
     lines_obj() {
@@ -154,6 +161,14 @@ export default {
     }
   },
   methods: {
+    //双击元素编辑事件
+    item_box_edit(item) {
+      this.edititem = item;
+    },
+    clear() {
+      localStorage.setItem("items", "");
+    },
+
     save() {
       localStorage.setItem("items", JSON.stringify(this.items));
       localStorage.setItem("lines", JSON.stringify(this.lines));
@@ -173,8 +188,9 @@ export default {
         id: parseInt(Math.random() * 1000000),
         tx: 0,
         ty: 0,
-        width: 300,
-        height: 120,
+        width: 150,
+        height: 40,
+        type: 'item-tag',
         subject: '新元素',
         text: "有很多用户留言，希望看一下各城市2019年累计的涨幅数据。为了满足用户需求，我们准备每月推出一期年涨幅月报。"
       }
@@ -355,11 +371,11 @@ export default {
 
         data.tx = x;
         data.ty = y;
-      }
-      if (window.getSelection) {
-        window.getSelection().removeAllRanges()
-      } else {
-        document.selection.empty()
+        if (window.getSelection) {
+          window.getSelection().removeAllRanges()
+        } else {
+          document.selection.empty()
+        }
       }
     },
 
@@ -379,7 +395,6 @@ export default {
       this.moveitem.el = e.currentTarget;
       this.moveitem.data = this.line_temp.to;
     },
-
     addmousewheel(e) {
       if (e.wheelDelta > 0) {
         if (this.svg_g_root.scale + 0.1 >= 2) {
@@ -531,9 +546,11 @@ export default {
             width: 300,
             height: 120,
             subject: '新元素',
+            type: "item-tag",
             ...this.line_temp.to,
             text: "有很多用户留言，希望看一下各城市2019年累计的涨幅数据。为了满足用户需求，我们准备每月推出一期年涨幅月报。"
           }
+
           this.addnew(to);
           this.addline(this.line_temp.from.id, to.id);
           this.line_temp = null;
@@ -692,6 +709,9 @@ export default {
         stroke-dashoffset: 50;
         stroke: @bordercolor1;
         stroke-width: 1;
+    }
+    .svg-textarea {
+        top: 55px;
     }
 }
 </style>

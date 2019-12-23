@@ -10,7 +10,6 @@
     <tspan class="subject" :textLength='subjectdata[0].width'>{{subjectdata[0].value.join('')}}</tspan>
     <tspan x='20' :y="70+index*18" class="remark" :textLength='row.width' v-for='(row,index) in textdata'>{{row.value.join('')}}</tspan>
   </text>
-
 </g>
 </template>
 <script>
