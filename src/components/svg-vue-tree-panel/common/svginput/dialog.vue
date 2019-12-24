@@ -29,7 +29,7 @@ export default {
   data() {
     return {
       show: true,
-      text: this.item.text
+      text: this.item.subject
     }
   },
   methods: {
@@ -39,7 +39,7 @@ export default {
       }
     },
     sure() {
-      this.item.text = this.text;
+      this.item.subject = this.text;
       this.$emit("cancel");
     },
     closed(done) {

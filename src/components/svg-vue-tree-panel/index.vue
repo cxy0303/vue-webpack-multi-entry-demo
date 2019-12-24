@@ -192,7 +192,7 @@ export default {
         height: 40,
         type: 'item-tag',
         subject: '新元素',
-        text: "有很多用户留言，希望看一下各城市2019年累计的涨幅数据。为了满足用户需求，我们准备每月推出一期年涨幅月报。"
+        text: ""
       }
       let root_el = this.$refs["svg_root"];
       item.tx = this.format_point(parseFloat(root_el.offsetWidth) / 2 - item.width / 2);
@@ -548,7 +548,7 @@ export default {
             subject: '新元素',
             type: "item-tag",
             ...this.line_temp.to,
-            text: "有很多用户留言，希望看一下各城市2019年累计的涨幅数据。为了满足用户需求，我们准备每月推出一期年涨幅月报。"
+            text: ""
           }
 
           this.addnew(to);
