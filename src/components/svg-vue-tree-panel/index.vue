@@ -41,7 +41,8 @@
         <path class="line_temp" :d='get_line_path(line_temp.from,line_temp.to)' v-if='line_temp' marker-start="url(#m_start)" marker-end="url(#m_end)"></path>
       </g>
       <g class="svg_g_component" ref='svg_g_components'>
-        <item-box :key='item.id' :istemp='moveitem.data==item' :item='item' v-for='(item,index) in items' @mousedown.native.stop="mousedown_handle($event,item)" @adddragstart='add_dargstart_handler' @edit='item_box_edit'></item-box>
+        <item-box :key='key' :istemp='moveitem.data==value' :item='value' v-for='(value,key) in items_obj' @mousedown.native.stop="mousedown_handle($event,value)" @adddragstart='add_dargstart_handler' @edit='item_box_edit'>
+        </item-box>
         <item-box :item='line_temp.to' v-if='line_temp' :istemp='true'></item-box>
       </g>
     </g>
@@ -99,17 +100,24 @@ export default {
     "svg-input": svginput
   },
   computed: {
-    lines_obj() {
-      var temp = {};
+    items_obj() {
+      var temp = {}
       this.items.forEach((item) => {
         temp[item.id] = item;
       })
+      return temp;
+    },
+    lines_obj() {
       var lines = [];
-      this.lines.forEach((item) => {
-        lines.push({
-          from: temp[item.from],
-          to: temp[item.to]
-        })
+      this.items.forEach((item) => {
+        for (var key in item.to) {
+          item.to[key].forEach((toitem) => {
+            lines.push({
+              from: item,
+              to: this.items_obj[toitem]
+            })
+          })
+        }
       })
       return lines;
     },
@@ -185,14 +193,27 @@ export default {
 
     addfirst() {
       let item = {
-        id: parseInt(Math.random() * 1000000),
+        id: "tag_" + parseInt(Math.random() * 1000000),
+        type: "item-tag",
         tx: 0,
         ty: 0,
         width: 150,
         height: 40,
         type: 'item-tag',
-        subject: '新元素',
-        text: ""
+        subject: '元素主题',
+        text: "元素内容",
+        from: {
+          top: [],
+          bottom: [],
+          left: [],
+          right: []
+        },
+        to: {
+          top: [],
+          bottom: [],
+          left: [],
+          right: []
+        }
       }
       let root_el = this.$refs["svg_root"];
       item.tx = this.format_point(parseFloat(root_el.offsetWidth) / 2 - item.width / 2);
@@ -379,22 +400,44 @@ export default {
       }
     },
 
-    add_dargstart_handler(e, from, to) {
-      this.mode = 2;
-      to.tx = this.format_point(to.tx);
-      to.ty = this.format_point(to.ty);
-      this.line_temp = {
-        from: from,
-        to: to
-      }
+    add_dargstart_handler(e, key, fromitem, toitem) {
+      // this.mode = 2;
+      toitem.tx = this.format_point(toitem.tx);
+      toitem.ty = this.format_point(toitem.ty);
+      this.items.push(toitem);
+      this.$nextTick(() => {
+        this.autoajust(key, fromitem)
+      })
+      // this.line_temp = {
+      //   from: from,
+      //   to: to
+      // }
       //跟随鼠标移动
-      this.moveitem.startx = e.screenX;
-      this.moveitem.starty = e.screenY;
-      this.moveitem.elx = this.line_temp.to.tx;
-      this.moveitem.ely = this.line_temp.to.ty;
-      this.moveitem.el = e.currentTarget;
-      this.moveitem.data = this.line_temp.to;
+      // this.moveitem.startx = e.screenX;
+      // this.moveitem.starty = e.screenY;
+      // this.moveitem.elx = this.line_temp.to.tx;
+      // this.moveitem.ely = this.line_temp.to.ty;
+      // this.moveitem.el = e.currentTarget;
+      // this.moveitem.data = this.line_temp.to;
     },
+
+    autoajust(key, item) {
+      var items = item.to[key];
+      if (key == "left" || key == "right") {
+        var m = items.length % 2;
+        var n = (items.length - m) / 2
+        for (var i = 0; i < items.length; i++) {
+          var id = items[i];
+          var m_item = this.items_obj[id];
+
+          if (m_item.tx == item.tx) {
+            m_item.tx += (key == "right" ? 300 : -300);
+          }
+          m_item.ty = item.ty - (n - i) * item.height * 2 + (m == 0 ? item.height : 0);
+        }
+      }
+    },
+
     addmousewheel(e) {
       if (e.wheelDelta > 0) {
         if (this.svg_g_root.scale + 0.1 >= 2) {

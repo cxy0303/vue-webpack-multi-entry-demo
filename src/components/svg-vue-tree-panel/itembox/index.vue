@@ -1,5 +1,5 @@
 <template>
-<g class="item-box selected" :transform='`translate(${item.tx},${item.ty})`' @mouseover.stop="mouseover" @mouseout.stop='mouseout'>
+<g class="item-box" :transform='`translate(${item.tx},${item.ty})`' @mouseover.stop="mouseover" @mouseout.stop='mouseout'>
   <rect x='-40' y='-40' :width='item.width+80' :height='item.height+80' fill='transparent'>
   </rect>
   <template v-if='showbar&&!istemp' v-for='(btn,key) in btns'>
@@ -22,9 +22,23 @@ export default {
       default () {
         return {
           id: '',
+          type: 'item-tag',
+          subject: '',
           text: '新元素',
           tx: 0,
-          ty: 0
+          ty: 0,
+          from: {
+            top: [],
+            bottom: [],
+            left: [],
+            right: []
+          },
+          to: {
+            top: [],
+            bottom: [],
+            left: [],
+            right: []
+          }
         }
       }
     },
@@ -80,35 +94,49 @@ export default {
     },
     mouseover(e) {
       this.showbar = true;
+      this.selected = true;
     },
     mouseout(e) {
       let toElement = e.relatedTarget || e.toElement;
       if (toElement && toElement.parentNode && toElement.parentNode != e.currentTarget && toElement.parentNode.parentNode != e.currentTarget) {
         this.showbar = false;
+        this.selected = false;
       }
     },
     mousedown_handle(e, key) {
       let to = {
-        tx: this.item.tx + this.item.width + this.r * 2 + 10,
+        id: "tag_" + parseInt(Math.random() * 1000000),
+        type: 'item-tag',
+        tx: this.item.tx,
         ty: this.item.ty,
         width: this.item.width,
         height: this.item.height,
         type: this.item.type,
-        text: "新元素"
+        subject: '元素主题',
+        text: "元素内容",
+        from: {
+          top: [],
+          bottom: [],
+          left: [],
+          right: []
+        },
+        to: {
+          top: [],
+          bottom: [],
+          left: [],
+          right: []
+        }
       }
 
-      if (key == "top") {
-        to.tx = this.item.tx;
-        to.ty = this.item.ty - this.item.height - this.r * 2 + 10;
-      } else if (key == "bottom") {
-        to.tx = this.item.tx;
-        to.ty = this.item.ty + this.item.height + this.r * 2 + 10;
-      } else if (key == "left") {
-        to.tx = this.item.tx - this.r * 2 + 10 - this.item.width;
-        to.ty = this.item.ty;
+      if (key == "left") {
+        to.from.right.push(this.item.id);
+        this.item.to.left.push(to.id);
+      } else if (key == "right") {
+        to.from.left.push(this.item.id);
+        this.item.to.right.push(to.id);
       }
 
-      this.$emit("adddragstart", e, this.item, to)
+      this.$emit("adddragstart", e, key, this.item, to)
     }
   }
 }
@@ -116,9 +144,13 @@ export default {
 <style lang="less">
 @import '../index.less';
 .item-box {
+    transition: all 0.3s;
     .item-box-bar {
         stroke: @bordercolor1;
         fill: white;
+    }
+    &.selected {
+        transition: none;
     }
 }
 </style>
